@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Integra Health — clinical sans */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #1a211c;
+  --color-ink-muted: #4a524e;
+  --color-surface: #f4f6f5;
+  --color-card: #ffffff;
+  /* Primary brand — CTAs, progress, active states */
+  --color-primary: #1d231f;
+  --color-primary-hover: #2d3833;
+  --color-accent: #6b7c72;
+  --color-cta: #1d231f;
+  --color-cta-hover: #2d3833;
+  --color-border: #dfe5e1;
+  --color-border-strong: #c5cdc8;
+  --color-progress-track: #e4e8e6;
+  --color-option-selected: color-mix(in srgb, var(--color-primary) 9%, white);
+  --color-option-hover: color-mix(in srgb, var(--color-primary) 5%, white);
+  --color-tier-high: #b45309;
+  --color-tier-mod: #ca8a04;
+  --color-tier-low: #15803d;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply m-0 min-h-dvh bg-[var(--color-surface)] text-[var(--color-ink)] font-sans text-base;
+  }
+
+  #root {
+    @apply min-h-dvh w-full max-w-none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
