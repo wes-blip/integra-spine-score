@@ -1,44 +1,31 @@
 import { useMemo, useState, type FormEvent, type SVGProps } from 'react'
 import {
   QUESTIONS,
+  RESULTS_BODY,
+  RESULTS_CLOSING,
   TIER_COPY,
+  getPersonalizationSentence,
   getTier,
-  type StressTier,
+  scoreFromSelections,
 } from './data/quiz'
 
 type Phase = 'landing' | 'quiz' | 'lead' | 'results'
 
 const BOOK_URL = 'https://book.integraoc.com'
 
+const GHL_INBOUND_WEBHOOK_URL =
+  'https://services.leadconnectorhq.com/hooks/tDJTuevxUhUjVmrOp0ok/webhook-trigger/45d2632a-2e93-4fa5-8b30-feca570abefb'
+
+function selectedAnswerLabels(selections: number[]): string[] {
+  return selections.map((optIdx, qIdx) => {
+    const q = QUESTIONS[qIdx]
+    if (optIdx < 0 || !q?.options[optIdx]) return ''
+    return q.options[optIdx].label
+  })
+}
+
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
-}
-
-const PLACEHOLDER_INSIGHT: Record<StressTier, string> = {
-  high:
-    'Your answers suggest your workday habits may be placing sustained load on your neck and upper back. This pattern is common for people who sit long hours with limited movement. A focused evaluation can help pinpoint what to change first.',
-  moderate:
-    'Your score shows a mix of supportive and stressful habits. You may already feel intermittent tension or fatigue. Small adjustments to posture, breaks, and screen setup often make a noticeable difference within a few weeks.',
-  low:
-    'Your routines appear relatively spine-friendly compared with typical desk-based work. Staying consistent with movement and ergonomics will help you keep this advantage as workloads change.',
-}
-
-const PLACEHOLDER_RECOMMENDATIONS: Record<StressTier, [string, string, string]> = {
-  high: [
-    'Schedule a brief posture and desk setup review with a professional.',
-    'Set a timer to stand or walk for 2–3 minutes every hour.',
-    'Raise your monitor so the top third is near eye level.',
-  ],
-  moderate: [
-    'Add one structured stretch break mid-morning and mid-afternoon.',
-    'Check chair height so hips and knees are near 90° when seated.',
-    'Notice slouching early and reset shoulders gently without forcing.',
-  ],
-  low: [
-    'Keep varying posture — even “good” sitting benefits from change.',
-    'Maintain regular movement you already enjoy (walks, gym, yoga).',
-    'Re-check ergonomics if you change monitors, chairs, or work location.',
-  ],
 }
 
 export default function App() {
@@ -49,7 +36,9 @@ export default function App() {
   )
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false)
   const [score, setScore] = useState(0)
 
   const current = QUESTIONS[stepIndex]
@@ -57,11 +46,16 @@ export default function App() {
 
   const tier = useMemo(() => getTier(score), [score])
   const tierStyle = TIER_COPY[tier]
+  const personalization = useMemo(
+    () => (phase === 'results' ? getPersonalizationSentence(tier, answers) : null),
+    [phase, tier, answers],
+  )
+  const resultsBody = RESULTS_BODY[tier]
 
-  function selectOption(points: number) {
+  function selectOption(optionIndex: number) {
     setAnswers((prev) => {
       const next = [...prev]
-      next[stepIndex] = points
+      next[stepIndex] = optionIndex
       return next
     })
   }
@@ -80,7 +74,7 @@ export default function App() {
     else setPhase('landing')
   }
 
-  function submitLead(e: FormEvent) {
+  async function submitLead(e: FormEvent) {
     e.preventDefault()
     const nameOk = firstName.trim().length >= 1
     const emailOk = isValidEmail(email)
@@ -89,10 +83,44 @@ export default function App() {
       return
     }
     setFormError(null)
-    // Proposal: feed leads into GoHighLevel — add webhook/API when credentials exist.
-    const total = answers.reduce((a, b) => a + b, 0)
+    setIsSubmittingLead(true)
+
+    const total = scoreFromSelections(answers)
+    const tierKey = getTier(total)
+    const labels = selectedAnswerLabels(answers)
+
+    const payload = {
+      name: firstName.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      score_number: total,
+      score_tier: TIER_COPY[tierKey].title,
+      q1: labels[0] ?? '',
+      q2: labels[1] ?? '',
+      q3: labels[2] ?? '',
+      q4: labels[3] ?? '',
+      q5: labels[4] ?? '',
+      q6: labels[5] ?? '',
+      submission_date: new Date().toISOString(),
+    }
+
+    try {
+      const res = await fetch(GHL_INBOUND_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        console.error('Lead webhook non-OK response', res.status, body)
+      }
+    } catch (err) {
+      console.error('Lead webhook request failed:', err)
+    }
+
     setScore(total)
     setPhase('results')
+    setIsSubmittingLead(false)
   }
 
   function restart() {
@@ -101,7 +129,9 @@ export default function App() {
     setAnswers(Array(QUESTIONS.length).fill(-1))
     setFirstName('')
     setEmail('')
+    setPhone('')
     setFormError(null)
+    setIsSubmittingLead(false)
     setScore(0)
   }
 
@@ -156,7 +186,7 @@ export default function App() {
         <div className="mx-auto w-full max-w-xl flex-1">
           {phase === 'landing' && (
             <section aria-labelledby="landing-title">
-              <p className="text-center text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+              <p className="text-center text-xs font-semibold uppercase tracking-wider text-[var(--color-accent-gold)]">
                 Desk & neck health
               </p>
               <h1
@@ -177,15 +207,15 @@ export default function App() {
               <div className="mt-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-black/5">
                 <ul className="space-y-3 text-left text-sm text-[var(--color-ink)]">
                   <li className="flex gap-2">
-                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-cta)]" />
+                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-accent-gold)]" />
                     <span>Step-by-step quiz with clear progress</span>
                   </li>
                   <li className="flex gap-2">
-                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-cta)]" />
+                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-accent-gold)]" />
                     <span>Personalized score and tier</span>
                   </li>
                   <li className="flex gap-2">
-                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-cta)]" />
+                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-accent-gold)]" />
                     <span>Optional booking with Integra Health</span>
                   </li>
                 </ul>
@@ -223,11 +253,11 @@ export default function App() {
                   aria-label="Quiz progress"
                 >
                   <div
-                    className="h-full rounded-full bg-[var(--color-primary)] transition-[width] duration-300 ease-out"
+                    className="h-full rounded-full bg-[var(--color-accent-gold)] transition-[width] duration-300 ease-out"
                     style={{ width: `${progress * 100}%` }}
                   />
                 </div>
-                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-[var(--color-primary)]">
+                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-[var(--color-accent-gold)]">
                   {current.topic}
                 </p>
                 <h2
@@ -243,31 +273,31 @@ export default function App() {
                 role="radiogroup"
                 aria-labelledby="quiz-title"
               >
-                {current.options.map((opt) => {
-                  const selected = answers[stepIndex] === opt.points
+                {current.options.map((opt, optIndex) => {
+                  const selected = answers[stepIndex] === optIndex
                   return (
                     <button
-                      key={opt.label}
+                      key={opt.id}
                       type="button"
                       role="radio"
                       aria-checked={selected}
-                      onClick={() => selectOption(opt.points)}
+                      onClick={() => selectOption(optIndex)}
                       className={`flex w-full cursor-pointer rounded-xl border px-4 py-3.5 text-left text-sm leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:text-base ${
                         selected
-                          ? 'border-[var(--color-primary)] bg-[var(--color-option-selected)] ring-2 ring-[var(--color-primary)]/25'
+                          ? 'border-[var(--color-accent-gold)] bg-[var(--color-option-selected)] ring-2 ring-[var(--color-accent-gold)]/35'
                           : 'border-[var(--color-border)] bg-[var(--color-card)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-option-hover)]'
                       }`}
                     >
                       <span
                         className={`mr-3 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
                           selected
-                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]'
+                            ? 'border-[var(--color-accent-gold)] bg-[var(--color-accent-gold)]'
                             : 'border-[var(--color-border-strong)] bg-white'
                         }`}
                         aria-hidden
                       >
                         {selected && (
-                          <span className="h-2 w-2 rounded-full bg-white" />
+                          <span className="h-2 w-2 rounded-full bg-[var(--color-ink)]" />
                         )}
                       </span>
                       <span className="text-[var(--color-ink)]">{opt.label}</span>
@@ -328,7 +358,7 @@ export default function App() {
                     autoComplete="given-name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-[var(--color-ink)] shadow-inner outline-none transition-[box-shadow] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-[var(--color-ink)] shadow-inner outline-none transition-[box-shadow] focus:border-[var(--color-accent-gold)] focus:ring-2 focus:ring-[var(--color-accent-gold)]/25"
                     aria-invalid={formError ? true : undefined}
                   />
                 </div>
@@ -347,8 +377,30 @@ export default function App() {
                     inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-[var(--color-ink)] shadow-inner outline-none transition-[box-shadow] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-[var(--color-ink)] shadow-inner outline-none transition-[box-shadow] focus:border-[var(--color-accent-gold)] focus:ring-2 focus:ring-[var(--color-accent-gold)]/25"
                     aria-invalid={formError ? true : undefined}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-[var(--color-ink)]"
+                  >
+                    Phone number{' '}
+                    <span className="font-normal text-[var(--color-ink-muted)]">
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-[var(--color-ink)] shadow-inner outline-none transition-[box-shadow] focus:border-[var(--color-accent-gold)] focus:ring-2 focus:ring-[var(--color-accent-gold)]/25"
+                    placeholder="e.g. 714-555-0100"
                   />
                 </div>
                 {formError && (
@@ -358,9 +410,10 @@ export default function App() {
                 )}
                 <button
                   type="submit"
-                  className="flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--color-primary)] text-base font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  disabled={isSubmittingLead}
+                  className="flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--color-primary)] text-base font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  See My Score
+                  {isSubmittingLead ? 'Calculating Score...' : 'See My Score'}
                 </button>
               </form>
             </section>
@@ -368,7 +421,7 @@ export default function App() {
 
           {phase === 'results' && (
             <section aria-live="polite" aria-labelledby="results-title">
-              <p className="text-center text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+              <p className="text-center text-xs font-semibold uppercase tracking-wider text-[var(--color-accent-gold)]">
                 Your results
               </p>
               <h2
@@ -389,7 +442,7 @@ export default function App() {
                     {score}
                   </span>
                   <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-                    points
+                    out of 100
                   </span>
                 </div>
                 <span
@@ -401,22 +454,17 @@ export default function App() {
 
               <div className="mt-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 text-left shadow-sm ring-1 ring-black/5">
                 <h3 className="font-display text-lg font-semibold text-[var(--color-ink)]">
-                  What this may mean
+                  What this means
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                  {PLACEHOLDER_INSIGHT[tier]}
-                </p>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 text-left shadow-sm ring-1 ring-black/5">
-                <h3 className="font-display text-lg font-semibold text-[var(--color-ink)]">
-                  Three simple recommendations
-                </h3>
-                <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                  {PLACEHOLDER_RECOMMENDATIONS[tier].map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ol>
+                <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  <p>{resultsBody.paragraph1}</p>
+                  <p>{resultsBody.paragraph2}</p>
+                  {personalization && <p>{personalization}</p>}
+                  <p>{resultsBody.paragraph3}</p>
+                  <p className="font-medium text-[var(--color-ink)]">
+                    {RESULTS_CLOSING}
+                  </p>
+                </div>
               </div>
 
               <a
@@ -425,8 +473,12 @@ export default function App() {
                 rel="noopener noreferrer"
                 className="mt-8 flex h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--color-cta)] text-base font-bold text-white shadow-md transition-colors hover:bg-[var(--color-cta-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-cta)]"
               >
-                Book Your Spine Reset
+                Start My 2-Visit Spine Reset
               </a>
+              <p className="mt-3 text-center text-sm leading-snug text-[var(--color-ink-muted)]">
+                Includes exam, adjustment, and targeted care session. No pressure.
+                Clear next steps.
+              </p>
 
               <button
                 type="button"
@@ -463,9 +515,7 @@ export default function App() {
           © {new Date().getFullYear()} Integra Health. All rights reserved.
         </p>
         <p className="mt-2 max-w-md mx-auto px-4">
-          Prototype for learning and marketing. Not a medical diagnosis — Dr.
-          Brock will replace placeholder result copy with clinical voice after
-          review.
+          For education and marketing. Not a medical diagnosis.
         </p>
       </footer>
     </div>
