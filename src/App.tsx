@@ -12,6 +12,8 @@ import {
 type Phase = 'landing' | 'quiz' | 'lead' | 'results'
 
 const BOOK_URL = 'https://book.integraoc.com'
+const RESULTS_CTA_URL =
+  'https://integrahealthoc.janeapp.com/#/discipline/7/treatment/12'
 
 const GHL_INBOUND_WEBHOOK_URL =
   'https://services.leadconnectorhq.com/hooks/tDJTuevxUhUjVmrOp0ok/webhook-trigger/45d2632a-2e93-4fa5-8b30-feca570abefb'
@@ -26,6 +28,11 @@ function selectedAnswerLabels(selections: number[]): string[] {
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
+function isValidPhone(value: string) {
+  const digits = value.replace(/\D/g, '')
+  return digits.length >= 10
 }
 
 export default function App() {
@@ -76,12 +83,24 @@ export default function App() {
 
   async function submitLead(e: FormEvent) {
     e.preventDefault()
-    const nameOk = firstName.trim().length >= 1
-    const emailOk = isValidEmail(email)
-    if (!nameOk || !emailOk) {
-      setFormError('Please enter your first name and a valid email address.')
+
+    const nameTrimmed = firstName.trim()
+    const emailTrimmed = email.trim()
+    const phoneTrimmed = phone.trim()
+
+    const namePresent = nameTrimmed.length >= 1
+    const emailPresent =
+      emailTrimmed.length >= 1 && isValidEmail(emailTrimmed)
+    const phonePresent =
+      phoneTrimmed.length >= 1 && isValidPhone(phoneTrimmed)
+
+    if (!namePresent || !emailPresent || !phonePresent) {
+      setFormError(
+        'Please enter your first name, a valid email address, and a valid phone number.',
+      )
       return
     }
+
     setFormError(null)
     setIsSubmittingLead(true)
 
@@ -90,9 +109,9 @@ export default function App() {
     const labels = selectedAnswerLabels(answers)
 
     const payload = {
-      name: firstName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
+      name: nameTrimmed,
+      email: emailTrimmed,
+      phone: phoneTrimmed,
       score_number: total,
       score_tier: TIER_COPY[tierKey].title,
       q1: labels[0] ?? '',
@@ -116,11 +135,10 @@ export default function App() {
       }
     } catch (err) {
       console.error('Lead webhook request failed:', err)
+    } finally {
+      setIsSubmittingLead(false)
+      window.location.href = RESULTS_CTA_URL
     }
-
-    setScore(total)
-    setPhase('results')
-    setIsSubmittingLead(false)
   }
 
   function restart() {
@@ -386,10 +404,7 @@ export default function App() {
                     htmlFor="phone"
                     className="block text-sm font-medium text-[var(--color-ink)]"
                   >
-                    Phone number{' '}
-                    <span className="font-normal text-[var(--color-ink-muted)]">
-                      (optional)
-                    </span>
+                    Phone number
                   </label>
                   <input
                     id="phone"
@@ -401,6 +416,8 @@ export default function App() {
                     onChange={(e) => setPhone(e.target.value)}
                     className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-[var(--color-ink)] shadow-inner outline-none transition-[box-shadow] focus:border-[var(--color-accent-gold)] focus:ring-2 focus:ring-[var(--color-accent-gold)]/25"
                     placeholder="e.g. 714-555-0100"
+                    required
+                    aria-invalid={formError ? true : undefined}
                   />
                 </div>
                 {formError && (
@@ -468,7 +485,7 @@ export default function App() {
               </div>
 
               <a
-                href={BOOK_URL}
+                href={RESULTS_CTA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-8 flex h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--color-cta)] text-base font-bold text-white shadow-md transition-colors hover:bg-[var(--color-cta-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-cta)]"
