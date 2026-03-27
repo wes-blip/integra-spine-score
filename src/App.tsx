@@ -137,7 +137,8 @@ export default function App() {
       console.error('Lead webhook request failed:', err)
     } finally {
       setIsSubmittingLead(false)
-      window.location.href = RESULTS_CTA_URL
+      setScore(total)
+      setPhase('results')
     }
   }
 
