@@ -144,36 +144,52 @@ export function getPersonalizationSentence(
   return null
 }
 
-export const RESULTS_CLOSING = 'Based on your score, this is your next best step.'
-
-export const RESULTS_BODY: Record<
-  StressTier,
-  { paragraph1: string; paragraph2: string; paragraph3: string }
-> = {
+/** "What this means" — copy matches SpineScore ResultPage Copy v3.pdf per tier. */
+export const RESULTS_BODY: Record<StressTier, { paragraphs: string[] }> = {
   high: {
-    paragraph1:
-      'Your responses are consistent with a high level of spinal stress, particularly through the neck and upper back.',
-    paragraph2:
-      'This pattern is typically driven by forward head posture and sustained compression from long hours at a screen, causing the neck, shoulders, and mid-back to round forward and work against each other.',
-    paragraph3:
-      "Most people at this stage are already dealing with recurring tension, stiffness, or headaches. It's no longer occasional. It's becoming your normal. The encouraging part: this is exactly what we assess and correct every day, and most people feel noticeable relief fairly quickly once the right structure is in place.",
+    paragraphs: [
+      'A score in this range indicates your spine is under sustained mechanical load that your body is actively compensating for every day. Most people at this level have already developed postural adaptation patterns they cannot feel yet but that show up clearly on examination.',
+      'This does not resolve with stretches or ergonomic adjustments. The compensation patterns are already set.',
+      'At this stage, these patterns do not stay stable. They typically progress into recurring stiffness, nerve irritation, or pain with routine activities. This is usually the point where people wish they had addressed it earlier. What changes them is a focused clinical intervention that identifies where the load is concentrated and resets the pattern before it becomes permanent.',
+    ],
   },
   moderate: {
-    paragraph1:
-      "This is where most people land, and it's the most important stage to catch it.",
-    paragraph2:
-      "You're likely noticing some tension in the neck, shoulders, or low back that comes and goes. It settles when things ease up, then returns when life gets busy again. Without changing the pattern, this usually becomes more consistent and harder to ignore over time.",
-    paragraph3:
-      "This group tends to be busy, driven, and used to pushing through. That's exactly why this is also where we see the fastest improvements. When we address it early, restoring proper movement is straightforward, and most people notice a difference in both how they feel and how they perform.",
+    paragraphs: [
+      'Moderate is the most consequential tier because the symptoms are not severe enough to act on yet. Most people in this range already feel this. They just have not labeled it yet. That mid-day tightness, the need to stretch, the fatigue in your upper back. That is this pattern showing up.',
+      'You are in the window where spinal stress is accumulating faster than your body is recovering. Most people do not act here, and that is why it turns into something bigger. This is the stage where the pattern either gets corrected or quietly compounds into something that takes significantly longer to address.',
+    ],
   },
   low: {
-    paragraph1:
-      "You're doing a lot of things right. Your habits are keeping spinal stress relatively low, and that reflects someone who's already paying attention to their health.",
-    paragraph2:
-      "You're actually the type of person we love working with. Proactive. Values performance. Thinks like an athlete.",
-    paragraph3:
-      "The goal at this stage isn't to wait for symptoms. It's to stay ahead of them and keep your body functioning at a high level before small imbalances quietly build into something harder to correct.",
+    paragraphs: [
+      'You are ahead of most desk workers your age. Your habits are working.',
+      'Most people who eventually develop issues started here and assumed they were fine. This is where staying ahead is easy, or where people slowly fall behind. The question is not whether something is wrong. It is whether small imbalances are developing beneath the surface before symptoms appear. This is the only stage where correction is simple.',
+      'The highest-performing patients we work with arrive before they have to. They treat their spine the way an athlete treats their body: proactively, not reactively.',
+    ],
   },
+}
+
+export const RESULTS_WHAT_WE_IDENTIFY_BULLETS = [
+  'Exactly where your spine is taking the most load.',
+  'Whether joints, discs, or muscle patterns are driving it.',
+  'How far the pattern has progressed.',
+  'What will actually change your score, not just temporarily relieve it.',
+] as const
+
+export const RESULTS_NEXT_STEP: Record<StressTier, string> = {
+  high:
+    'The 2-Visit Spine Reset was built for exactly this presentation. A thorough exam, targeted adjustment, and a clear picture of what is driving your score. You will leave knowing what is actually happening in your spine.',
+  moderate:
+    'The 2-Visit Spine Reset gives us a clinical baseline on your spine before the pattern advances. Most patients in this tier leave their first visit with a clear picture of what is building and a specific plan to reverse it.',
+  low:
+    'The 2-Visit Spine Reset gives you an objective clinical baseline. Your actual spinal status, not just your habits. If everything looks clean, you will know. If there is something worth addressing early, you have caught it at the right time.',
+}
+
+/** Tier-specific subline beneath the Results CTA (PDF v3). */
+export const RESULTS_CTA_SUBLINE: Record<StressTier, string> = {
+  high: 'Built to identify and correct the exact stress pattern driving your score.',
+  moderate:
+    'Designed to catch and reverse this pattern before it becomes harder to fix.',
+  low: 'Gives you a true baseline so small imbalances do not quietly build.',
 }
 
 export const TIER_COPY: Record<
@@ -181,7 +197,7 @@ export const TIER_COPY: Record<
   { title: string; badgeClass: string; ringClass: string }
 > = {
   high: {
-    title: 'High Stress',
+    title: 'High Spinal Stress',
     badgeClass:
       'bg-amber-50 text-[var(--color-tier-high)] ring-1 ring-amber-200',
     ringClass: 'ring-amber-300/80',

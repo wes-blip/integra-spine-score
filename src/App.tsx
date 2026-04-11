@@ -2,9 +2,10 @@ import { useMemo, useState, type FormEvent, type SVGProps } from 'react'
 import {
   QUESTIONS,
   RESULTS_BODY,
-  RESULTS_CLOSING,
+  RESULTS_CTA_SUBLINE,
+  RESULTS_NEXT_STEP,
+  RESULTS_WHAT_WE_IDENTIFY_BULLETS,
   TIER_COPY,
-  getPersonalizationSentence,
   getTier,
   scoreFromSelections,
 } from './data/quiz'
@@ -53,10 +54,6 @@ export default function App() {
 
   const tier = useMemo(() => getTier(score), [score])
   const tierStyle = TIER_COPY[tier]
-  const personalization = useMemo(
-    () => (phase === 'results' ? getPersonalizationSentence(tier, answers) : null),
-    [phase, tier, answers],
-  )
   const resultsBody = RESULTS_BODY[tier]
 
   function selectOption(optionIndex: number) {
@@ -475,14 +472,30 @@ export default function App() {
                   What this means
                 </h3>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                  <p>{resultsBody.paragraph1}</p>
-                  <p>{resultsBody.paragraph2}</p>
-                  {personalization && <p>{personalization}</p>}
-                  <p>{resultsBody.paragraph3}</p>
-                  <p className="font-medium text-[var(--color-ink)]">
-                    {RESULTS_CLOSING}
-                  </p>
+                  {resultsBody.paragraphs.map((paragraph, i) => (
+                    <p key={i}>{paragraph}</p>
+                  ))}
                 </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 text-left shadow-sm ring-1 ring-black/5">
+                <h3 className="font-display text-lg font-semibold text-[var(--color-ink)]">
+                  What we identify in your visit
+                </h3>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  {RESULTS_WHAT_WE_IDENTIFY_BULLETS.map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 text-left shadow-sm ring-1 ring-black/5">
+                <h3 className="font-display text-lg font-semibold text-[var(--color-ink)]">
+                  Your next step
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  {RESULTS_NEXT_STEP[tier]}
+                </p>
               </div>
 
               <a
@@ -494,8 +507,7 @@ export default function App() {
                 Start My 2-Visit Spine Reset
               </a>
               <p className="mt-3 text-center text-sm leading-snug text-[var(--color-ink-muted)]">
-                Includes exam, adjustment, and targeted care session. No pressure.
-                Clear next steps.
+                {RESULTS_CTA_SUBLINE[tier]}
               </p>
 
               <button
