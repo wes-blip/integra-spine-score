@@ -209,30 +209,28 @@ export default function App() {
                 id="landing-title"
                 className="font-display mt-3 text-center text-3xl font-bold leading-tight tracking-tight text-[var(--color-ink)] sm:text-4xl"
               >
-                See how your workday may be affecting your spine
+                Your workday has a spinal stress score. Find out yours in 60 seconds.
               </h1>
               <p className="mt-4 text-center text-[var(--color-ink-muted)] leading-relaxed">
-                Six quick questions for desk workers — sitting, posture, symptoms,
-                and habits. You will see a stress score and next steps, and you can
-                book a{' '}
-                <span className="font-medium text-[var(--color-ink)]">
-                  $99 Spine Reset
-                </span>{' '}
-                at Integra Health when you are ready.
+                Six questions. Your personalized spinal stress score. Takes 60 to 90
+                seconds.
+              </p>
+              <p className="mt-3 text-center text-[var(--color-ink-muted)] leading-relaxed">
+                Most people don’t notice the problem until it becomes pain.
               </p>
               <div className="mt-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-black/5">
                 <ul className="space-y-3 text-left text-sm text-[var(--color-ink)]">
                   <li className="flex gap-2">
                     <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-accent-gold)]" />
-                    <span>Step-by-step quiz with clear progress</span>
+                    <span>Guided 60-second assessment</span>
                   </li>
                   <li className="flex gap-2">
                     <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-accent-gold)]" />
-                    <span>Personalized score and tier</span>
+                    <span>Your personalized spinal stress score</span>
                   </li>
                   <li className="flex gap-2">
                     <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-accent-gold)]" />
-                    <span>Optional booking with Integra Health</span>
+                    <span>Clear next steps based on your score</span>
                   </li>
                 </ul>
                 <button
@@ -240,7 +238,7 @@ export default function App() {
                   onClick={() => setPhase('quiz')}
                   className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--color-primary)] text-base font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 >
-                  Start the assessment
+                  Get My SpineScore
                 </button>
               </div>
               <p className="mt-6 text-center text-xs text-[var(--color-ink-muted)]">
