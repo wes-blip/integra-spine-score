@@ -14,7 +14,7 @@ type Phase = 'landing' | 'quiz' | 'lead' | 'results'
 
 const BOOK_URL = 'https://book.integraoc.com'
 const RESULTS_CTA_URL =
-  'https://integrahealthoc.janeapp.com/#/discipline/7/treatment/12'
+  'https://book.integraoc.com'
 
 const GHL_INBOUND_WEBHOOK_URL =
   'https://services.leadconnectorhq.com/hooks/tDJTuevxUhUjVmrOp0ok/webhook-trigger/45d2632a-2e93-4fa5-8b30-feca570abefb'
